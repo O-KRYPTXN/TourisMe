@@ -1,0 +1,88 @@
+.chatbot-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f2856d, #034aa6);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 30px rgba(242, 133, 109, 0.4);
+  transition: all 0.3s ease;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+.chatbot-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 40px rgba(242, 133, 109, 0.6);
+}
+
+.chatbot-button .glow-effect {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f2856d, #034aa6);
+  opacity: 0.4;
+  filter: blur(12px);
+  z-index: -1;
+}
+
+.chatbot-button .button-content {
+  position: relative;
+  color: white;
+}
+
+.chatbot-button .sparkle {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  animation: sparkle 1.5s infinite;
+}
+
+.chatbot-button .tooltip {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(13, 6, 40, 0.95);
+  backdrop-filter: blur(12px);
+  color: white;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.chatbot-button:hover .tooltip {
+  opacity: 1;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
