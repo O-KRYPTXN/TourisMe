@@ -6,6 +6,72 @@ const SESSION_KEY = 'luxor_session';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 class AuthService {
+    constructor() {
+        this.seedTestUsers();
+    }
+
+    async seedTestUsers() {
+        try {
+            const users = secureStorage.getItem(USERS_KEY) || [];
+
+            // Only seed if no users exist
+            if (users.length > 0) return;
+
+            const testPassword = await hashPassword('password123');
+
+            const testUsers = [
+                {
+                    id: 'admin-001',
+                    firstName: 'Admin',
+                    lastName: 'User',
+                    email: 'admin@luxor.com',
+                    phone: '+201234567890',
+                    role: 'Admin',
+                    companyName: null,
+                    licenseNumber: null,
+                    businessDescription: null,
+                    password: testPassword,
+                    createdAt: new Date().toISOString(),
+                },
+                {
+                    id: 'tourist-001',
+                    firstName: 'Sarah',
+                    lastName: 'Johnson',
+                    email: 'tourist@luxor.com',
+                    phone: '+201234567891',
+                    role: 'Tourist',
+                    companyName: null,
+                    licenseNumber: null,
+                    businessDescription: null,
+                    password: testPassword,
+                    createdAt: new Date().toISOString(),
+                },
+                {
+                    id: 'provider-001',
+                    firstName: 'Mohamed',
+                    lastName: 'Ahmed',
+                    email: 'provider@luxor.com',
+                    phone: '+201234567892',
+                    role: 'LocalBusinessOwner',
+                    companyName: 'Luxor Adventures Ltd.',
+                    licenseNumber: 'LIC-2024-001',
+                    businessDescription: 'Premium tour services specializing in ancient Egyptian sites',
+                    password: testPassword,
+                    createdAt: new Date().toISOString(),
+                }
+            ];
+
+            secureStorage.setItem(USERS_KEY, testUsers);
+            console.log('✅ Test users seeded successfully!');
+            console.log('📧 Test Credentials:');
+            console.log('   Admin: admin@luxor.com / password123');
+            console.log('   Tourist: tourist@luxor.com / password123');
+            console.log('   Provider: provider@luxor.com / password123');
+        } catch (error) {
+            console.error('Failed to seed test users:', error);
+        }
+    }
+
     async register(userData) {
         try {
             // Validate input
@@ -42,6 +108,10 @@ class AuthService {
             const newUser = {
                 id: Date.now().toString(),
                 ...sanitized,
+                role: userData.role || 'Tourist', // Store role from registration
+                companyName: userData.companyName || null,
+                licenseNumber: userData.licenseNumber || null,
+                businessDescription: userData.businessDescription || null,
                 password: hashedPassword,
                 createdAt: new Date().toISOString(),
             };

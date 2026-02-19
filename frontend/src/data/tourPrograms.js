@@ -306,13 +306,14 @@ export const tourPrograms = [
 
 // Filtering functions
 export const filterPrograms = ({
+    allPrograms = tourPrograms,
     category,
     minPrice,
     maxPrice,
     searchQuery,
     company,
 } = {}) => {
-    return tourPrograms.filter(program => {
+    return allPrograms.filter(program => {
         if (category && program.category !== category) return false;
         if (minPrice && program.price < minPrice) return false;
         if (maxPrice && program.price > maxPrice) return false;

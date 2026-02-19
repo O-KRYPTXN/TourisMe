@@ -15,7 +15,42 @@ const TourDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
-    const program = getProgramById(id);
+
+    // Try static data first, then localStorage for provider programs
+    let program = getProgramById(id);
+    if (!program) {
+        try {
+            const programsData = localStorage.getItem('luxor_programs');
+            const programs = programsData ? JSON.parse(programsData) : [];
+            const found = programs.find(p => p.id === id && p.status === 'Approved');
+            if (found) {
+                program = {
+                    id: found.id,
+                    name: found.title,
+                    company: found.companyName || 'Tour Company',
+                    companyRating: 4.5,
+                    image: found.images?.[0] || 'https://images.unsplash.com/photo-1553913861-c0fddf2619ee?w=800',
+                    duration: found.duration + ' hours',
+                    price: found.price,
+                    originalPrice: found.price * 1.2,
+                    discount: 20,
+                    rating: found.rating || 4.5,
+                    reviews: Math.floor(Math.random() * 100) + 50,
+                    groupSize: `Up to ${found.maxCapacity || 15} people`,
+                    difficulty: found.difficulty || 'Easy',
+                    category: found.category || 'Cultural',
+                    description: found.description,
+                    highlights: found.highlights || [],
+                    included: found.inclusions || [],
+                    notIncluded: found.exclusions || [],
+                    itinerary: found.itinerary || [{ day: 1, title: 'Full Day Experience', description: found.description }],
+                    providerId: found.providerId
+                };
+            }
+        } catch (error) {
+            console.error('Error loading provider program:', error);
+        }
+    }
 
     const heroRef = useRef(null);
     const contentRef = useRef(null);

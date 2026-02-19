@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { Calendar, Users, MessageSquare, CreditCard } from 'lucide-react';
 import { getProgramById } from '../data/tourPrograms';
+import { useAuth } from '../contexts/AuthContext';
+import { createBooking } from '../utils/BookingManager';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Input from '../components/common/Input';
@@ -11,7 +13,36 @@ import Alert from '../components/common/Alert';
 const Booking = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const program = getProgramById(id);
+    const { user } = useAuth();
+
+    // Try to find program from static data first, then from localStorage
+    let program = getProgramById(id);
+
+    // If not found in static data, check localStorage for provider programs
+    if (!program) {
+        try {
+            const programsData = localStorage.getItem('luxor_programs');
+            const programs = programsData ? JSON.parse(programsData) : [];
+            const foundProgram = programs.find(p => p.id === id);
+
+            if (foundProgram && foundProgram.status === 'Approved') {
+                // Map provider program to expected format
+                program = {
+                    id: foundProgram.id,
+                    name: foundProgram.title,
+                    company: foundProgram.companyName || 'Tour Company',
+                    price: foundProgram.price,
+                    originalPrice: foundProgram.price * 1.2,
+                    duration: foundProgram.duration,
+                    image: foundProgram.images?.[0] || 'https://images.unsplash.com/photo-1553913861-c0fddf2619ee?w=800',
+                    providerId: foundProgram.providerId,
+                    category: foundProgram.category || 'Cultural'
+                };
+            }
+        } catch (error) {
+            console.error('Error loading program:', error);
+        }
+    }
     const [formData, setFormData] = useState({
         date: '',
         adults: 1,
@@ -51,8 +82,39 @@ const Booking = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setSuccess(true);
-        setTimeout(() => navigate('/my-bookings'), 2000);
+
+        if (!user) {
+            alert('Please login to make a booking');
+            navigate('/login');
+            return;
+        }
+
+        // Create booking
+        console.log('📝 Creating booking with providerId:', program.providerId, 'programId:', program.id);
+        const booking = createBooking({
+            touristId: user.id,
+            touristName: `${user.firstName} ${user.lastName}`,
+            touristEmail: user.email,
+            touristPhone: user.phone || 'N/A',
+            programId: program.id,
+            programTitle: program.name,
+            programImage: program.image,
+            companyName: program.company,
+            providerId: program.providerId || 'static-provider',
+            tourDate: formData.date,
+            adults: formData.adults,
+            children: formData.children,
+            totalPrice: total,
+            specialRequests: formData.requests
+        });
+        console.log('✅ Booking result:', booking);
+
+        if (booking) {
+            setSuccess(true);
+            setTimeout(() => navigate('/my-bookings'), 2000);
+        } else {
+            alert('Failed to create booking. Please try again.');
+        }
     };
 
     const total = program.price * (formData.adults + formData.children * 0.7);

@@ -43,7 +43,14 @@ const Login = () => {
         const result = await login(email, password);
 
         if (result.success) {
-            navigate(from, { replace: true });
+            // Redirect to role-specific dashboard
+            const dashboardMap = {
+                Admin: '/dashboard/admin',
+                Tourist: '/dashboard/tourist',
+                LocalBusinessOwner: '/dashboard/provider',
+            };
+            const dashboardPath = dashboardMap[result.user.role] || from;
+            navigate(dashboardPath, { replace: true });
         } else {
             setError(result.error);
             setLoading(false);
@@ -127,6 +134,15 @@ const Login = () => {
                         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Log In'}
                     </Button>
                 </form>
+
+                <div className="mt-6 p-4 bg-primary-500/10 border border-primary-500/20 rounded-xl">
+                    <p className="text-sm font-medium text-primary-400 mb-2">🔐 Test Credentials:</p>
+                    <div className="space-y-1 text-xs text-white/60 font-mono">
+                        <p>Admin: admin@luxor.com / password123</p>
+                        <p>Tourist: tourist@luxor.com / password123</p>
+                        <p>Provider: provider@luxor.com / password123</p>
+                    </div>
+                </div>
 
                 <p className="text-center mt-6 text-white/50">
                     Don't have an account?{' '}

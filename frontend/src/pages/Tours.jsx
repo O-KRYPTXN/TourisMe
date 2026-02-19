@@ -14,7 +14,8 @@ const Tours = () => {
     const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedCompany, setSelectedCompany] = useState('');
-    const [filteredPrograms, setFilteredPrograms] = useState(tourPrograms);
+    const [allPrograms, setAllPrograms] = useState([]);
+    const [filteredPrograms, setFilteredPrograms] = useState([]);
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
     // Refs for animations
@@ -23,8 +24,58 @@ const Tours = () => {
     const cardsContainerRef = useRef(null);
     const hasInitiallyAnimated = useRef(false);
 
+    // Load programs (static + approved provider programs)
+    useEffect(() => {
+        const loadPrograms = () => {
+            try {
+                // Get provider programs from localStorage
+                const programsData = localStorage.getItem('luxor_programs');
+                const providerPrograms = programsData ? JSON.parse(programsData) : [];
+
+                // Filter only approved programs
+                const approvedPrograms = providerPrograms
+                    .filter(p => p.status === 'Approved')
+                    .map(program => ({
+                        id: program.id,
+                        name: program.title,
+                        company: program.companyName || 'Tour Company',
+                        companyRating: 4.5,
+                        image: program.images?.[0] || 'https://images.unsplash.com/photo-1553913861-c0fddf2619ee?w=800',
+                        duration: program.duration,
+                        price: program.price,
+                        originalPrice: program.price * 1.2, // 20% markup
+                        discount: 20,
+                        rating: program.rating || 4.5,
+                        reviews: Math.floor(Math.random() * 100) + 50,
+                        groupSize: `Up to ${program.maxParticipants || 15} people`,
+                        difficulty: program.difficulty || 'Easy',
+                        category: program.category || 'Cultural',
+                        description: program.description,
+                        highlights: program.highlights || [],
+                        included: program.included || [],
+                        notIncluded: program.notIncluded || [],
+                        itinerary: program.itinerary || [],
+                        providerId: program.providerId
+                    }));
+
+                // Merge static programs with approved provider programs
+                const merged = [...tourPrograms, ...approvedPrograms];
+                setAllPrograms(merged);
+                setFilteredPrograms(merged);
+            } catch (error) {
+                console.error('Error loading programs:', error);
+                setAllPrograms(tourPrograms);
+                setFilteredPrograms(tourPrograms);
+            }
+        };
+
+        loadPrograms();
+    }, []);
+
+    // Filter programs when filters change
     useEffect(() => {
         const filtered = filterPrograms({
+            allPrograms,
             category: selectedCategory,
             company: selectedCompany,
             searchQuery,
@@ -46,7 +97,7 @@ const Tours = () => {
                 }
             );
         }
-    }, [selectedCategory, selectedCompany, searchQuery]);
+    }, [allPrograms, selectedCategory, selectedCompany, searchQuery]);
 
     useEffect(() => {
         // Header slide down animation
