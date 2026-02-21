@@ -1,4 +1,7 @@
 
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
+
 const advertisementSchema = new Schema({
   ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true }, 
   contentUrl: { type: String }, 
@@ -11,4 +14,7 @@ const advertisementSchema = new Schema({
   } 
 });
 
-module.exports = mongoose.model('Advertisement', advertisementSchema);
+
+const Advertisement = mongoose.model('Advertisement', advertisementSchema);
+
+export default Advertisement;

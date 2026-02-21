@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
 
 const serviceSchema = new Schema({
   ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -40,4 +42,6 @@ const TourPackage = Service.discriminator('TourPackage', new Schema({
   includedItems: [{ type: String }] 
 }));
 
-module.exports = { Service, Restaurant, Rental, TourPackage };
+
+export { Service, Restaurant, Rental, TourPackage };
+export default Service;

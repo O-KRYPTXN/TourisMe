@@ -1,4 +1,8 @@
 
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
+
+
 const attractionSchema = new Schema({
   name: { type: String, required: true }, 
   description: { type: String },
@@ -17,4 +21,7 @@ const attractionSchema = new Schema({
 // Index for geospatial queries
 attractionSchema.index({ location: '2dsphere' }); 
 
-module.exports = mongoose.model('Attraction', attractionSchema);
+
+const Attraction = mongoose.model('Attraction', attractionSchema);
+
+export default Attraction;

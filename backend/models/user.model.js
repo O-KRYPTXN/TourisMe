@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 // Base User Schema
@@ -27,6 +27,7 @@ const Tourist = User.discriminator('Tourist', new Schema({
 const LocalBusinessOwner = User.discriminator('LocalBusinessOwner', new Schema({
   companyName: { type: String, required: true }, 
   licenseNumber: { type: String, required: true }, 
+  description: { type: String }, 
   isVerified: { type: Boolean, default: false }
 }));
 
@@ -35,4 +36,5 @@ const Admin = User.discriminator('Admin', new Schema({
   roleLevel: { type: String, default: 'Moderator' } 
 }));
 
-module.exports = { User, Tourist, LocalBusinessOwner, Admin };
+export { User, Tourist, LocalBusinessOwner, Admin };
+export default User;

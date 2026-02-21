@@ -1,4 +1,6 @@
 
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
 
 const chatSessionSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -9,4 +11,5 @@ const chatSessionSchema = new Schema({
   }]
 }, { timestamps: true });
 
-module.exports = mongoose.model('ChatSession', chatSessionSchema);
+const ChatSession = mongoose.model('ChatSession', chatSessionSchema);
+export default ChatSession;

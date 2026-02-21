@@ -1,4 +1,7 @@
 
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
+
 const bookingSchema = new Schema({
   touristId: { type: Schema.Types.ObjectId, ref: 'User', required: true }, //
   serviceId: { type: Schema.Types.ObjectId, ref: 'Service', required: true }, //
@@ -12,4 +15,6 @@ const bookingSchema = new Schema({
   } //
 });
 
-module.exports = mongoose.model('Booking', bookingSchema);
+
+const Booking = mongoose.model('Booking', bookingSchema);
+export default Booking;

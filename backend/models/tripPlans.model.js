@@ -1,4 +1,5 @@
-
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
 
 const tripPlanSchema = new Schema({
   touristId: { type: Schema.Types.ObjectId, ref: 'User', required: true }, 
@@ -18,4 +19,7 @@ const tripPlanSchema = new Schema({
   }]
 }, { timestamps: true });
 
-module.exports = mongoose.model('TripPlan', tripPlanSchema);
+
+const TripPlan = mongoose.model('TripPlan', tripPlanSchema);
+
+export default TripPlan;
