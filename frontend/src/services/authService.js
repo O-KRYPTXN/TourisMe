@@ -1,80 +1,14 @@
-import { sanitizeInput, secureStorage, hashPassword } from '../utils/security';
+import { sanitizeInput, secureStorage } from '../utils/security';
 import { loginSchema, signupSchema } from '../utils/validation';
 
-const USERS_KEY = 'luxor_users';
 const SESSION_KEY = 'luxor_session';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const API_BASE_URL =
+    import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 class AuthService {
-    constructor() {
-        this.seedTestUsers();
-    }
-
-    async seedTestUsers() {
-        try {
-            const users = secureStorage.getItem(USERS_KEY) || [];
-
-            // Only seed if no users exist
-            if (users.length > 0) return;
-
-            const testPassword = await hashPassword('password123');
-
-            const testUsers = [
-                {
-                    id: 'admin-001',
-                    firstName: 'Admin',
-                    lastName: 'User',
-                    email: 'admin@luxor.com',
-                    phone: '+201234567890',
-                    role: 'Admin',
-                    companyName: null,
-                    licenseNumber: null,
-                    businessDescription: null,
-                    password: testPassword,
-                    createdAt: new Date().toISOString(),
-                },
-                {
-                    id: 'tourist-001',
-                    firstName: 'Sarah',
-                    lastName: 'Johnson',
-                    email: 'tourist@luxor.com',
-                    phone: '+201234567891',
-                    role: 'Tourist',
-                    companyName: null,
-                    licenseNumber: null,
-                    businessDescription: null,
-                    password: testPassword,
-                    createdAt: new Date().toISOString(),
-                },
-                {
-                    id: 'provider-001',
-                    firstName: 'Mohamed',
-                    lastName: 'Ahmed',
-                    email: 'provider@luxor.com',
-                    phone: '+201234567892',
-                    role: 'LocalBusinessOwner',
-                    companyName: 'Luxor Adventures Ltd.',
-                    licenseNumber: 'LIC-2024-001',
-                    businessDescription: 'Premium tour services specializing in ancient Egyptian sites',
-                    password: testPassword,
-                    createdAt: new Date().toISOString(),
-                }
-            ];
-
-            secureStorage.setItem(USERS_KEY, testUsers);
-            console.log('✅ Test users seeded successfully!');
-            console.log('📧 Test Credentials:');
-            console.log('   Admin: admin@luxor.com / password123');
-            console.log('   Tourist: tourist@luxor.com / password123');
-            console.log('   Provider: provider@luxor.com / password123');
-        } catch (error) {
-            console.error('Failed to seed test users:', error);
-        }
-    }
-
     async register(userData) {
         try {
-            // Validate input
             const validation = signupSchema.safeParse(userData);
             if (!validation.success) {
                 return {
@@ -83,8 +17,7 @@ class AuthService {
                 };
             }
 
-            // Sanitize input
-            const sanitized = {
+            const sanitizedCommon = {
                 firstName: sanitizeInput(userData.firstName),
                 lastName: sanitizeInput(userData.lastName),
                 email: sanitizeInput(userData.email),
@@ -92,35 +25,62 @@ class AuthService {
                 password: userData.password,
             };
 
-            // Check if user exists
-            const users = secureStorage.getItem(USERS_KEY) || [];
-            if (users.find(u => u.email === sanitized.email)) {
+            const fullName = `${sanitizedCommon.firstName} ${sanitizedCommon.lastName}`.trim();
+            const isTourist = userData.role === 'Tourist';
+
+            const endpoint = isTourist
+                ? '/auth/signup/tourist'
+                : '/auth/signup/owner';
+
+            const payload = isTourist
+                ? {
+                    name: fullName,
+                    email: sanitizedCommon.email,
+                    phone: sanitizedCommon.phone,
+                    password: sanitizedCommon.password,
+                }
+                : {
+                    name: fullName,
+                    email: sanitizedCommon.email,
+                    phone: sanitizedCommon.phone,
+                    password: sanitizedCommon.password,
+                    companyName: sanitizeInput(userData.companyName),
+                    licenseNumber: sanitizeInput(userData.licenseNumber),
+                };
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
                 return {
                     success: false,
-                    error: 'Email already registered',
+                    error: data?.message || 'Registration failed',
                 };
             }
 
-            // Hash password
-            const hashedPassword = await hashPassword(sanitized.password);
+            const apiUser = data.user || {};
+            const [apiFirstName, ...apiLastParts] = (apiUser.name || '').split(' ');
+            const apiLastName = apiLastParts.join(' ');
 
-            // Create user
             const newUser = {
-                id: Date.now().toString(),
-                ...sanitized,
-                role: userData.role || 'Tourist', // Store role from registration
-                companyName: userData.companyName || null,
+                id: apiUser.id,
+                firstName: sanitizedCommon.firstName || apiFirstName,
+                lastName: sanitizedCommon.lastName || apiLastName,
+                email: apiUser.email || sanitizedCommon.email,
+                phone: sanitizedCommon.phone,
+                role: apiUser.role || userData.role || 'Tourist',
+                companyName: apiUser.companyName || userData.companyName || null,
                 licenseNumber: userData.licenseNumber || null,
                 businessDescription: userData.businessDescription || null,
-                password: hashedPassword,
                 createdAt: new Date().toISOString(),
             };
 
-            delete newUser.password; // Don't store in user object returned
-            users.push({ ...newUser, password: hashedPassword });
-            secureStorage.setItem(USERS_KEY, users);
-
-            // Create session
             this.createSession(newUser);
 
             return {
@@ -130,14 +90,13 @@ class AuthService {
         } catch (error) {
             return {
                 success: false,
-                error: 'Registration failed',
+                error: 'Registration failed. Please try again.',
             };
         }
     }
 
     async login(email, password) {
         try {
-            // Validate
             const validation = loginSchema.safeParse({ email, password });
             if (!validation.success) {
                 return {
@@ -146,40 +105,62 @@ class AuthService {
                 };
             }
 
-            // Get users
-            const users = secureStorage.getItem(USERS_KEY) || [];
-            const hashedPassword = await hashPassword(password);
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email: sanitizeInput(email),
+                    password,
+                }),
+            });
 
-            const user = users.find(
-                u => u.email === email && u.password === hashedPassword
-            );
+            const data = await response.json();
 
-            if (!user) {
+            if (!response.ok) {
                 return {
                     success: false,
-                    error: 'Invalid email or password',
+                    error: data?.message || 'Invalid email or password',
                 };
             }
 
-            // Create session
-            const userWithoutPassword = { ...user };
-            delete userWithoutPassword.password;
-            this.createSession(userWithoutPassword);
+            const apiUser = data.user || {};
+            const [firstName, ...lastParts] = (apiUser.name || '').split(' ');
+            const lastName = lastParts.join(' ');
+
+            const user = {
+                id: apiUser.id,
+                firstName: firstName || '',
+                lastName: lastName || '',
+                email: apiUser.email || email,
+                phone: apiUser.phone || '',
+                role: apiUser.role,
+                companyName: apiUser.companyName || null,
+                createdAt: new Date().toISOString(),
+            };
+
+            this.createSession(user);
 
             return {
                 success: true,
-                user: userWithoutPassword,
+                user,
             };
         } catch (error) {
             return {
                 success: false,
-                error: 'Login failed',
+                error: 'Login failed. Please try again.',
             };
         }
     }
 
     logout() {
         secureStorage.removeItem(SESSION_KEY);
+
+        // Best-effort backend logout to clear cookie
+        fetch(`${API_BASE_URL}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+        }).catch(() => {});
     }
 
     createSession(user) {
@@ -194,7 +175,6 @@ class AuthService {
         const session = secureStorage.getItem(SESSION_KEY);
         if (!session) return null;
 
-        // Check if expired
         if (Date.now() > session.expiresAt) {
             this.logout();
             return null;
@@ -213,67 +193,27 @@ class AuthService {
     }
 
     async updateProfile(updates) {
-        try {
-            const currentUser = this.getCurrentUser();
-            if (!currentUser) {
-                return { success: false, error: 'Not authenticated' };
-            }
-
-            const users = secureStorage.getItem(USERS_KEY) || [];
-            const userIndex = users.findIndex(u => u.id === currentUser.id);
-
-            if (userIndex === -1) {
-                return { success: false, error: 'User not found' };
-            }
-
-            // Update user
-            users[userIndex] = {
-                ...users[userIndex],
-                firstName: sanitizeInput(updates.firstName),
-                lastName: sanitizeInput(updates.lastName),
-                phone: sanitizeInput(updates.phone),
-            };
-
-            secureStorage.setItem(USERS_KEY, users);
-
-            // Update session
-            const updatedUser = { ...users[userIndex] };
-            delete updatedUser.password;
-            this.createSession(updatedUser);
-
-            return { success: true, user: updatedUser };
-        } catch (error) {
-            return { success: false, error: 'Update failed' };
+        const currentUser = this.getCurrentUser();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
         }
+
+        const updatedUser = {
+            ...currentUser,
+            firstName: sanitizeInput(updates.firstName ?? currentUser.firstName),
+            lastName: sanitizeInput(updates.lastName ?? currentUser.lastName),
+            phone: sanitizeInput(updates.phone ?? currentUser.phone),
+        };
+
+        this.createSession(updatedUser);
+        return { success: true, user: updatedUser };
     }
 
-    async changePassword(currentPassword, newPassword) {
-        try {
-            const currentUser = this.getCurrentUser();
-            if (!currentUser) {
-                return { success: false, error: 'Not authenticated' };
-            }
-
-            const users = secureStorage.getItem(USERS_KEY) || [];
-            const currentHashedPassword = await hashPassword(currentPassword);
-            const user = users.find(
-                u => u.id === currentUser.id && u.password === currentHashedPassword
-            );
-
-            if (!user) {
-                return { success: false, error: 'Current password is incorrect' };
-            }
-
-            // Update password
-            const newHashedPassword = await hashPassword(newPassword);
-            const userIndex = users.findIndex(u => u.id === currentUser.id);
-            users[userIndex].password = newHashedPassword;
-            secureStorage.setItem(USERS_KEY, users);
-
-            return { success: true };
-        } catch (error) {
-            return { success: false, error: 'Password change failed' };
-        }
+    async changePassword() {
+        return {
+            success: false,
+            error: 'Change password via backend endpoint (not yet wired).',
+        };
     }
 }
 

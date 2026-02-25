@@ -12,6 +12,7 @@ import bookingRoutes from './routes/booking.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import adsRoutes from './routes/ads.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import tripPlanRoutes from './routes/tripPlan.routes.js';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/advertisements', adsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/trip-plans', tripPlanRoutes);
 
 
 
