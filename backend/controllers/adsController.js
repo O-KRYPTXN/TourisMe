@@ -1,5 +1,6 @@
 import Advertisement from '../models/ads.model.js';
 import { Service } from '../models/service.model.js';
+import { createNotification, notificationTemplates } from '../utils/notificationHelper.js';
 
 // @desc    Submit a new advertisement
 // @route   POST /api/advertisements
@@ -233,6 +234,16 @@ export const updateAdStatus = async (req, res) => {
     if (!ad) {
       return res.status(404).json({ message: 'Advertisement not found' });
     }
+
+     // ✅ ADD THIS: Send notification to owner
+    const owner = await User.findById(ad.ownerId);
+
+    if (status === 'Approved') {
+      await notificationTemplates.adApproved(ad, owner);
+    } else if (status === 'Rejected') {
+      await notificationTemplates.adRejected(ad, owner, rejectionReason);
+    }
+    // ✅ END OF NOTIFICATION CODE
 
     res.status(200).json({ 
       message: `Advertisement ${status.toLowerCase()} successfully`, 

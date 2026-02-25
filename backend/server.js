@@ -11,6 +11,7 @@ import serviceRoutes from './routes/service.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import adsRoutes from './routes/ads.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 dotenv.config();
 
@@ -29,7 +30,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/merndb')
 
 
 
-  // Routes
+  // default routes
 app.get('/api', (req, res) => {
   res.json({ message: 'Welcome to MERN API' });
 });
@@ -45,6 +46,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/advertisements', adsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 

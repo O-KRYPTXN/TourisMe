@@ -1,6 +1,8 @@
 import Review from '../models/reviews.model.js';
 import Attraction from '../models/attraction.model.js';
 import { Service } from '../models/service.model.js';
+import { createNotification, notificationTemplates } from '../utils/notificationHelper.js';
+import { sendEmail, emailTemplates } from '../utils/sendEmail.js';
 
 // Helper function to recalculate and update the average rating (FR-R4)
 const updateAverageRating = async (targetId, targetModel) => {
@@ -92,6 +94,15 @@ export const createReview = async (req, res) => {
 
     // Update the average rating of the parent item (FR-R4)
     const stats = await updateAverageRating(targetId, targetModel);
+
+    // ✅ ADD THIS: Notify owner about new review
+    if (targetModel === 'Service') {
+      const service = await Service.findById(targetId).populate('ownerId');
+      const owner = await User.findById(service.ownerId);
+      
+      await notificationTemplates.newReview(review, owner, service);
+    }
+    // Note: For attractions, you might not have an owner, so skip notification
 
     res.status(201).json({ 
       message: 'Review added successfully', 

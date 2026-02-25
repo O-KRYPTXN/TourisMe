@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User, Tourist, LocalBusinessOwner } from '../models/user.model.js'; 
+import { notificationTemplates, createNotification } from '../utils/notificationHelper.js';
+
 
 // Helper function to generate JWT
 const generateToken = (id, role) => {
@@ -54,6 +56,8 @@ export const registerTourist = async (req, res) => {
       role: 'Tourist'
     });
 
+    await notificationTemplates.welcome(newTourist); // Send welcome notification and email
+
     sendTokenResponse(newTourist, 201, res, 'Tourist registered successfully.');
 
   } catch (error) {
@@ -91,6 +95,8 @@ export const registerOwner = async (req, res) => {
       licenseNumber,    
       role: 'LocalBusinessOwner'
     });
+
+    await notificationTemplates.welcome(newOwner); // Send welcome notification and email
 
     sendTokenResponse(newOwner, 201, res, 'Local Business Owner registered successfully.');
 

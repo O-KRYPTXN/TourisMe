@@ -1,5 +1,7 @@
 import Booking from '../models/booking.model.js';
 import { Service } from '../models/service.model.js';
+import { notificationTemplates , createNotification} from '../utils/notificationHelper.js';
+
 
 // @desc    Create a new booking
 // @route   POST /api/bookings
@@ -44,6 +46,33 @@ export const createBooking = async (req, res) => {
 
     // Populate service details for response
     await booking.populate('serviceId', 'name serviceType price images');
+
+     //  Notify business owner about new booking
+    const owner = await User.findById(service.ownerId);
+    
+    await createNotification({
+      userId: owner._id,
+      type: 'booking_confirmed',
+      title: 'New Booking Received',
+      message: `You have a new booking for ${service.name}`,
+      relatedId: booking._id,
+      relatedModel: 'Booking',
+      actionUrl: `/bookings/${booking._id}`,
+      priority: 'high',
+      sendEmailNotification: true,
+      emailData: {
+        to: owner.email,
+        subject: 'New Booking Received - TourisMe Luxor',
+        html: `
+          <h1>New Booking!</h1>
+          <p>Service: ${service.name}</p>
+          <p>Date: ${new Date(booking.serviceDate).toLocaleDateString()}</p>
+          <p>Revenue: $${booking.totalPrice}</p>
+        `
+      }
+    });
+    // end notification
+
 
     res.status(201).json({ 
       message: 'Booking created successfully', 
@@ -193,6 +222,29 @@ export const updateBookingStatus = async (req, res) => {
 
     await booking.populate('serviceId', 'name serviceType');
     await booking.populate('touristId', 'name email');
+
+
+     //  Send notification based on status
+    const tourist = await User.findById(booking.touristId);
+
+    if (status === 'Confirmed') {
+      await notificationTemplates.bookingConfirmed(booking, tourist);
+    } else if (status === 'Cancelled') {
+      await notificationTemplates.bookingCancelled(booking, tourist);
+    } else if (status === 'Completed') {
+      // Notify tourist that service is completed
+      await createNotification({
+        userId: tourist._id,
+        type: 'booking_confirmed',
+        title: 'Booking Completed',
+        message: `Your booking for ${booking.serviceId.name} is now complete! Please leave a review.`,
+        relatedId: booking._id,
+        relatedModel: 'Booking',
+        actionUrl: `/bookings/${booking._id}`,
+        priority: 'medium'
+      });
+    }
+      // end notifications
 
     res.status(200).json({ 
       message: `Booking ${status.toLowerCase()} successfully`, 
