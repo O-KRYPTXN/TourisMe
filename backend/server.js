@@ -6,9 +6,11 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/user.routes.js';
 import attractionRoutes from './routes/attraction.routes.js';
-//import adminRoutes from './routes/admin.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import serviceRoutes from './routes/service.routes.js';
-
+import bookingRoutes from './routes/booking.routes.js';
+import reviewRoutes from './routes/review.routes.js';
+import adsRoutes from './routes/ads.routes.js';
 
 dotenv.config();
 
@@ -38,9 +40,11 @@ app.get('/api', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/attractions', attractionRoutes);
-//app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/services', serviceRoutes);
-
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/advertisements', adsRoutes);
 
 
 
